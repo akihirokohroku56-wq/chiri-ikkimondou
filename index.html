@@ -613,6 +613,42 @@ header::after {
   .card-text { font-size: 15px; }
 }
 
+/* ─── QUESTION COUNT ROW ─── */
+.count-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.count-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.count-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(42,157,143,0.25);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.count-btn:hover {
+  border-color: var(--sand);
+  color: rgba(255,255,255,0.85);
+}
+.count-btn.active {
+  background: rgba(233,196,106,0.22);
+  border-color: var(--sand);
+  color: var(--sand);
+  font-weight: 700;
+}
+
 /* ─── JUDGMENT BUTTONS ─── */
 .judge-row {
   display: flex;
@@ -857,6 +893,18 @@ header::after {
       <input type="number" id="pageMax" placeholder="58" min="42" max="58" value="">
     </div>
     <button class="start-btn" onclick="buildDeck()">このページで出題</button>
+  </div>
+
+  <!-- Question count -->
+  <div class="count-row">
+    <div class="region-label">問題数</div>
+    <div class="count-btns">
+      <button class="count-btn" data-n="10"  onclick="setLimit(10)">10問</button>
+      <button class="count-btn" data-n="20"  onclick="setLimit(20)">20問</button>
+      <button class="count-btn" data-n="30"  onclick="setLimit(30)">30問</button>
+      <button class="count-btn" data-n="50"  onclick="setLimit(50)">50問</button>
+      <button class="count-btn active" data-n="all" onclick="setLimit(null)">全問</button>
+    </div>
   </div>
 
   <!-- Mode -->
@@ -1119,6 +1167,7 @@ let deck = [];
 let currentIdx = 0;
 let isFlipped = false;
 let results = [];   // true=正解, false=不正解, per deck index
+let questionLimit = null; // null=全問, 数字=上限
 
 // ─── FILTER ─────────────────────────────────────────────────────────────
 function getFiltered() {
@@ -1131,10 +1180,17 @@ function getFiltered() {
 }
 
 function buildDeck(customDeck) {
-  const filtered = customDeck || getFiltered();
-  deck = mode === 'rnd' && !customDeck
-    ? [...filtered].sort(() => Math.random() - 0.5)
-    : [...filtered];
+  let filtered = customDeck || getFiltered();
+  if (!customDeck) {
+    // 問題数制限がある場合は必ずシャッフルしてからスライス
+    if (questionLimit !== null) {
+      filtered = [...filtered].sort(() => Math.random() - 0.5);
+      filtered = filtered.slice(0, questionLimit);
+    } else if (mode === 'rnd') {
+      filtered = [...filtered].sort(() => Math.random() - 0.5);
+    }
+  }
+  deck = filtered;
   results = new Array(deck.length).fill(null);
   currentIdx = 0;
   isFlipped = false;
@@ -1327,6 +1383,15 @@ function toggleRegion(r) {
   const btn = document.getElementById('btn-' + r);
   btn.className = 'region-btn' + (selectedRegions.has(r)
     ? (r === 'G1' ? ' active-ea' : ' active-se') : '');
+  buildDeck();
+}
+
+function setLimit(n) {
+  questionLimit = n;
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    const val = btn.dataset.n === 'all' ? null : parseInt(btn.dataset.n);
+    btn.classList.toggle('active', val === n);
+  });
   buildDeck();
 }
 
